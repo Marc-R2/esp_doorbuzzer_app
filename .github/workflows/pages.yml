@@ -1,0 +1,26 @@
+name: CI-Pages
+
+on:
+  push:
+    branches: [ stable ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2 # Only works with v2
+
+      - name: Auth GitHub
+        run: git config --global url."https://${{ secrets.MANU_GITHUB_TOKEN }}@github.com/".insteadOf "https://github.com/"
+
+      - uses: subosito/flutter-action@v1
+        with:
+          channel: 'beta'
+
+      - uses: bluefireteam/flutter-gh-pages@v7
+        with:
+          targetBranch: page-public
+          baseHref: /
+
+
