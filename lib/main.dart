@@ -105,8 +105,7 @@ class EspController {
     );
   }
 
-  Future<http.Response> requestGet(String path) =>
-      http.get(
+  Future<http.Response> requestGet(String path) => http.get(
         Uri.parse('$ipAddress/$path'),
         headers: headers,
       );
@@ -161,22 +160,91 @@ class OpenInfo extends StatelessWidget {
           if (state == BuzzerState.unavailable) {
             return const Text('Buzzer is unavailable');
           }
+          const size = 48.0;
           return IgnorePointer(
             ignoring: state != BuzzerState.idle,
-            child: ListView(
-              controller: _scrollController,
-              shrinkWrap: true,
-              padding: const EdgeInsets.all(32),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 ElevatedButton(
                   onPressed: esp.openDoor,
                   child: const Text('Open door'),
+                ),
+                const SizedBox(height: 16),
+                // Row with icons for the states and a animated positioned in stack to show the current state
+                SizedBox(
+                  height: size,
+                  width: size * 3,
+                  child: Stack(
+                    children: [
+                      AnimatedPositioned(
+                        duration: const Duration(milliseconds: 256),
+                        curve: Curves.easeInOut,
+                        left: state == BuzzerState.firstBuzz
+                            ? 0
+                            : state == BuzzerState.wait
+                                ? size
+                                : state == BuzzerState.secondBuzz
+                                    ? size * 2
+                                    : state == BuzzerState.finished
+                                        ? size * 3
+                                        : size * -1,
+                        child: AnimatedContainer(
+                          duration: const Duration(milliseconds: 256),
+                          color: state == BuzzerState.finished ||
+                                  state == BuzzerState.idle
+                              ? Colors.transparent
+                              : Colors.blue,
+                          height: size,
+                          width: size,
+                        ),
+                      ),
+                      Row(
+                        children: const [
+                          StateIcon(state: BuzzerState.firstBuzz, size: size),
+                          StateIcon(state: BuzzerState.wait, size: size),
+                          StateIcon(state: BuzzerState.secondBuzz, size: size),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
           );
         },
       ),
+    );
+  }
+}
+
+class StateIcon extends StatelessWidget {
+  const StateIcon({
+    super.key,
+    required this.size,
+    required this.state,
+  });
+
+  final double size;
+
+  final BuzzerState state;
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = state == BuzzerState.firstBuzz
+        ? Icons.volume_up
+        : state == BuzzerState.wait
+            ? Icons.timer
+            : state == BuzzerState.secondBuzz
+                ? Icons.volume_up
+                : state == BuzzerState.finished
+                    ? Icons.check
+                    : null;
+
+    return SizedBox(
+      height: size,
+      width: size,
+      child: icon != null ? Center(child: Icon(icon)) : null,
     );
   }
 }
