@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:com_flutter_client/com_flutter_client.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
@@ -43,23 +44,29 @@ class _MyHomePageState extends State<MyHomePage> {
       appBar: AppBar(
         title: Text(widget.title),
       ),
-      body: Center(
-        child: FutureBuilder<bool>(
-          future: esp.isAvailable(),
-          builder: (context, snapshot) {
-            if (snapshot.hasData) {
-              return snapshot.data!
-                  ? OpenInfo(esp: esp)
-                  : const Text('ESP not available');
-            } else if (snapshot.hasError) {
-              return Text("${snapshot.error}");
-            }
-            return const CircularProgressIndicator();
-          },
-        ),
+      body: OpenInfo(esp: esp),
+      floatingActionButton: DataBuilder(
+        data: esp.state,
+        builder: (context, state) {
+          return FloatingActionButton(
+            onPressed: state != BuzzerState.idle ? null : esp.openDoor,
+            tooltip: 'Open door',
+            child: const Icon(Icons.door_back_door_outlined),
+          );
+        },
       ),
     );
   }
+}
+
+enum BuzzerState {
+  unknown,
+  unavailable,
+  idle,
+  firstBuzz,
+  wait,
+  secondBuzz,
+  finished,
 }
 
 class EspController {
@@ -86,6 +93,8 @@ class EspController {
     return _buzzerDelay!;
   }
 
+  final state = GlobalData.withoutKey(value: BuzzerState.unknown);
+
   Map<String, String> get headers =>
       {'Authorization': 'Basic ${base64Encode(utf8.encode('admin:admin'))}'};
 
@@ -96,14 +105,37 @@ class EspController {
     );
   }
 
-  Future<http.Response> requestGet(String path) => http.get(
+  Future<http.Response> requestGet(String path) =>
+      http.get(
         Uri.parse('$ipAddress/$path'),
         headers: headers,
       );
 
-  Future<void> openDoor() => requestPost('button/door_buzzer/press');
+  Future<void> openDoor() async {
+    if (state.value != BuzzerState.idle) return;
 
-  Future<bool> isAvailable() async => (await requestGet('')).statusCode == 200;
+    await requestPost('button/door_buzzer/press');
+
+    state.value = BuzzerState.firstBuzz;
+    await Future<void>.delayed(Duration(seconds: await buzzerDuration));
+    state.value = BuzzerState.wait;
+    await Future<void>.delayed(Duration(seconds: await buzzerDelay));
+    state.value = BuzzerState.secondBuzz;
+    await Future<void>.delayed(Duration(seconds: await buzzerDuration));
+    state.value = BuzzerState.finished;
+    await Future<void>.delayed(const Duration(milliseconds: 1000));
+    isAvailable();
+  }
+
+  Future<bool> isAvailable() async {
+    if ((await requestGet('')).statusCode == 200) {
+      state.value = BuzzerState.idle;
+      return true;
+    }
+
+    state.value = BuzzerState.unavailable;
+    return false;
+  }
 
   Future<String> getState(String type, String id) async {
     final response = await requestGet('$type/$id/get');
@@ -113,33 +145,38 @@ class EspController {
 }
 
 class OpenInfo extends StatelessWidget {
-  const OpenInfo({
-    super.key,
-    required this.esp,
-  });
+  OpenInfo({super.key, required this.esp});
 
   final EspController esp;
 
+  final ScrollController _scrollController = ScrollController();
+
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: Center(
-        child: ListView(
-          shrinkWrap: true,
-          padding: const EdgeInsets.all(32),
-          children: [
-            ElevatedButton(
-              onPressed: esp.openDoor,
-              child: const Text('Open door'),
+    esp.isAvailable();
+    return Center(
+      child: DataBuilder(
+        data: esp.state,
+        builder: (context, state) {
+          if (state == BuzzerState.unavailable) {
+            return const Text('Buzzer is unavailable');
+          }
+          return IgnorePointer(
+            ignoring: state != BuzzerState.idle,
+            child: ListView(
+              controller: _scrollController,
+              shrinkWrap: true,
+              padding: const EdgeInsets.all(32),
+              children: [
+                ElevatedButton(
+                  onPressed: esp.openDoor,
+                  child: const Text('Open door'),
+                ),
+              ],
             ),
-          ],
-        ),
+          );
+        },
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => esp.openDoor(),
-        tooltip: 'Open door',
-        child: const Icon(Icons.door_back_door_outlined),
-      ), // This trailing comma makes auto-formatting nicer for build methods
     );
   }
 }

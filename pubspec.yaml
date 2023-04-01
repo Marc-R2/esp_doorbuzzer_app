@@ -9,6 +9,9 @@ environment:
   sdk: '>=2.19.5 <3.0.0'
 
 dependencies:
+  com_flutter_client:
+    path: ../com_flutter_client
+
   flutter:
     sdk: flutter
 
