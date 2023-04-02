@@ -24,18 +24,18 @@ class OpenInfo extends StatelessWidget {
             return const Text('Buzzer is in unknown state');
           }
           const size = 64.0;
+
+          final show =
+              state == BuzzerState.finished || state == BuzzerState.idle;
+
           return IgnorePointer(
             ignoring: state != BuzzerState.idle,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                ElevatedButton(
-                  onPressed: esp.openDoor,
-                  child: const Text('Open door'),
-                ),
-                const SizedBox(height: 16),
-                // Row with icons for the states and a animated positioned in stack to show the current state
-                SizedBox(
+            child: InkWell(
+              onTap: () {
+                if (state == BuzzerState.idle) esp.openDoor();
+              },
+              child: Center(
+                child: SizedBox(
                   height: size + size / 8,
                   width: size * 3,
                   child: Stack(
@@ -55,13 +55,26 @@ class OpenInfo extends StatelessWidget {
                         child: SizedBox(
                           height: size,
                           width: size,
-                          child: AnimatedContainer(
+                          child: AnimatedOpacity(
                             duration: const Duration(milliseconds: 256),
-                            margin: const EdgeInsets.all(4),
-                            color: state == BuzzerState.finished ||
-                                    state == BuzzerState.idle
-                                ? Colors.transparent
-                                : Colors.blue.withOpacity(0.5),
+                            curve: Curves.easeInOut,
+                            opacity: show ? 0 : 1,
+                            child: Container(
+                              margin: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(8),
+                                color: Colors.blue.shade100,
+                                // drop shadow
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.2),
+                                    spreadRadius: 1,
+                                    blurRadius: 2,
+                                    offset: const Offset(0, 1),
+                                  ),
+                                ],
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -87,7 +100,7 @@ class OpenInfo extends StatelessWidget {
                     ],
                   ),
                 ),
-              ],
+              ),
             ),
           );
         },

@@ -35,37 +35,40 @@ class StateIcon extends StatelessWidget {
       width: size,
       child: Padding(
         padding: const EdgeInsets.all(4.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            if (icon != null)
-              Expanded(
-                child: Center(
-                  child: Icon(
-                    icon,
-                    size: size / 2,
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(8),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              if (icon != null)
+                Expanded(
+                  child: Center(
+                    child: Icon(
+                      icon,
+                      size: size / 2,
+                    ),
                   ),
                 ),
+              DataBuilder(
+                data: esp.state,
+                builder: (context, state) {
+                  final startTime = esp.getStartTimeByState(this.state);
+                  final endTime = esp.getEndTimeByState(this.state);
+
+                  if (!startTime.isBefore(endTime)) return const SizedBox();
+
+                  return AnimatedContainer(
+                    duration: const Duration(milliseconds: 256),
+                    height: this.state == state ? size / 8 : 0,
+                    child: TimeBasedLinearProgressIndicator(
+                      startTime: startTime,
+                      endTime: endTime,
+                    ),
+                  );
+                },
               ),
-            DataBuilder(
-              data: esp.state,
-              builder: (context, state) {
-                final startTime = esp.getStartTimeByState(this.state);
-                final endTime = esp.getEndTimeByState(this.state);
-
-                if (!startTime.isBefore(endTime)) return const SizedBox();
-
-                return AnimatedContainer(
-                  duration: const Duration(milliseconds: 256),
-                  height: this.state == state ? size / 8 : 0,
-                  child: TimeBasedLinearProgressIndicator(
-                    startTime: startTime,
-                    endTime: endTime,
-                  ),
-                );
-              },
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );

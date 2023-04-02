@@ -30,8 +30,15 @@ class EspController {
 
   final state = GlobalData.withoutKey(value: BuzzerState.unknown);
 
-  Map<String, String> get headers =>
-      {'Authorization': 'Basic ${base64Encode(utf8.encode('admin:admin'))}'};
+  Map<String, String> get headers => {
+        'Authorization': 'Basic ${base64Encode(utf8.encode('admin:admin'))}',
+        // Allow CORS
+        'Access-Control-Allow-Origin': '*',
+        // Allow all methods
+        'Access-Control-Allow-Methods': 'GET, POST, PUT, DELETE, OPTIONS',
+        // Allow all headers
+        'Access-Control-Allow-Headers': '*',
+      };
 
   Future<void> requestPost(String path) async {
     await http.post(
