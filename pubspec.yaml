@@ -10,7 +10,9 @@ environment:
 
 dependencies:
   com_flutter_client:
-    path: ../com_flutter_client
+    #path: ../com_flutter_client
+    git:
+      url: https://github.com/Marc-R2/com_flutter_client.git
 
   flutter:
     sdk: flutter
