@@ -41,14 +41,59 @@ class EspController {
   }
 
   Future<http.Response> requestGet(String path) => http.get(
-    Uri.parse('$ipAddress/$path'),
-    headers: headers,
-  );
+        Uri.parse('$ipAddress/$path'),
+        headers: headers,
+      );
+
+  DateTime? _lastOpen;
+
+  DateTime get lastOpen => _lastOpen ??= DateTime.now();
+
+  DateTime get firstBuzzStart => lastOpen;
+  DateTime get firstBuzzEnd => firstBuzzStart.add(Duration(seconds: _buzzerDuration ?? 0));
+
+  DateTime get waitStart => firstBuzzEnd;
+  DateTime get waitEnd => waitStart.add(Duration(seconds: _buzzerDelay ?? 0));
+
+  DateTime get secondBuzzStart => waitEnd;
+  DateTime get secondBuzzEnd => secondBuzzStart.add(Duration(seconds: _buzzerDuration ?? 0));
+
+  DateTime getStartTimeByState(BuzzerState state) {
+    switch (state) {
+      case BuzzerState.firstBuzz:
+        return firstBuzzStart;
+      case BuzzerState.wait:
+        return waitStart;
+      case BuzzerState.secondBuzz:
+        return secondBuzzStart;
+      case BuzzerState.finished:
+        return secondBuzzEnd;
+      default:
+        return DateTime.now();
+    }
+  }
+
+  DateTime getEndTimeByState(BuzzerState state) {
+    switch (state) {
+      case BuzzerState.firstBuzz:
+        return firstBuzzEnd;
+      case BuzzerState.wait:
+        return waitEnd;
+      case BuzzerState.secondBuzz:
+        return secondBuzzEnd;
+      case BuzzerState.finished:
+        return secondBuzzEnd;
+      default:
+        return DateTime.now();
+    }
+  }
 
   Future<void> openDoor() async {
     if (state.value != BuzzerState.idle) return;
 
     await requestPost('button/door_buzzer/press');
+
+    _lastOpen = DateTime.now();
 
     state.value = BuzzerState.firstBuzz;
     await Future<void>.delayed(Duration(seconds: await buzzerDuration));

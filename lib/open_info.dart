@@ -20,7 +20,10 @@ class OpenInfo extends StatelessWidget {
           if (state == BuzzerState.unavailable) {
             return const Text('Buzzer is unavailable');
           }
-          const size = 48.0;
+          if (state == BuzzerState.unknown) {
+            return const Text('Buzzer is in unknown state');
+          }
+          const size = 64.0;
           return IgnorePointer(
             ignoring: state != BuzzerState.idle,
             child: Column(
@@ -33,7 +36,7 @@ class OpenInfo extends StatelessWidget {
                 const SizedBox(height: 16),
                 // Row with icons for the states and a animated positioned in stack to show the current state
                 SizedBox(
-                  height: size,
+                  height: size + size / 8,
                   width: size * 3,
                   child: Stack(
                     children: [
@@ -49,21 +52,36 @@ class OpenInfo extends StatelessWidget {
                                     : state == BuzzerState.finished
                                         ? size * 3
                                         : size * -1,
-                        child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 256),
-                          color: state == BuzzerState.finished ||
-                                  state == BuzzerState.idle
-                              ? Colors.transparent
-                              : Colors.blue,
+                        child: SizedBox(
                           height: size,
                           width: size,
+                          child: AnimatedContainer(
+                            duration: const Duration(milliseconds: 256),
+                            margin: const EdgeInsets.all(4),
+                            color: state == BuzzerState.finished ||
+                                    state == BuzzerState.idle
+                                ? Colors.transparent
+                                : Colors.blue.withOpacity(0.5),
+                          ),
                         ),
                       ),
                       Row(
-                        children: const [
-                          StateIcon(state: BuzzerState.firstBuzz, size: size),
-                          StateIcon(state: BuzzerState.wait, size: size),
-                          StateIcon(state: BuzzerState.secondBuzz, size: size),
+                        children: [
+                          StateIcon(
+                            esp: esp,
+                            state: BuzzerState.firstBuzz,
+                            size: size,
+                          ),
+                          StateIcon(
+                            esp: esp,
+                            state: BuzzerState.wait,
+                            size: size,
+                          ),
+                          StateIcon(
+                            esp: esp,
+                            state: BuzzerState.secondBuzz,
+                            size: size,
+                          ),
                         ],
                       ),
                     ],
