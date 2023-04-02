@@ -35,70 +35,83 @@ class OpenInfo extends StatelessWidget {
                 if (state == BuzzerState.idle) esp.openDoor();
               },
               child: Center(
-                child: SizedBox(
-                  height: size + size / 8,
-                  width: size * 3,
-                  child: Stack(
-                    children: [
-                      AnimatedPositioned(
-                        duration: const Duration(milliseconds: 256),
-                        curve: Curves.easeInOut,
-                        left: state == BuzzerState.firstBuzz
-                            ? 0
-                            : state == BuzzerState.wait
-                                ? size
-                                : state == BuzzerState.secondBuzz
-                                    ? size * 2
-                                    : state == BuzzerState.finished
-                                        ? size * 3
-                                        : size * -1,
-                        child: SizedBox(
-                          height: size,
-                          width: size,
-                          child: AnimatedOpacity(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    SizedBox(
+                      height: size + size / 8,
+                      width: size * 3,
+                      child: Stack(
+                        children: [
+                          AnimatedPositioned(
                             duration: const Duration(milliseconds: 256),
                             curve: Curves.easeInOut,
-                            opacity: show ? 0 : 1,
-                            child: Container(
-                              margin: const EdgeInsets.all(4),
-                              decoration: BoxDecoration(
-                                borderRadius: BorderRadius.circular(8),
-                                color: Colors.blue.shade100,
-                                // drop shadow
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: Colors.black.withOpacity(0.2),
-                                    spreadRadius: 1,
-                                    blurRadius: 2,
-                                    offset: const Offset(0, 1),
+                            left: state == BuzzerState.firstBuzz
+                                ? 0
+                                : state == BuzzerState.wait
+                                    ? size
+                                    : state == BuzzerState.secondBuzz
+                                        ? size * 2
+                                        : state == BuzzerState.finished
+                                            ? size * 3
+                                            : size * -1,
+                            child: SizedBox(
+                              height: size,
+                              width: size,
+                              child: AnimatedOpacity(
+                                duration: const Duration(milliseconds: 256),
+                                curve: Curves.easeInOut,
+                                opacity: show ? 0 : 1,
+                                child: Container(
+                                  margin: const EdgeInsets.all(4),
+                                  decoration: BoxDecoration(
+                                    borderRadius: BorderRadius.circular(8),
+                                    color: Colors.blue.shade100,
+                                    // drop shadow
+                                    boxShadow: [
+                                      BoxShadow(
+                                        color: Colors.black.withOpacity(0.2),
+                                        spreadRadius: 1,
+                                        blurRadius: 2,
+                                        offset: const Offset(0, 1),
+                                      ),
+                                    ],
                                   ),
-                                ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                      ),
-                      Row(
-                        children: [
-                          StateIcon(
-                            esp: esp,
-                            state: BuzzerState.firstBuzz,
-                            size: size,
-                          ),
-                          StateIcon(
-                            esp: esp,
-                            state: BuzzerState.wait,
-                            size: size,
-                          ),
-                          StateIcon(
-                            esp: esp,
-                            state: BuzzerState.secondBuzz,
-                            size: size,
+                          Row(
+                            children: [
+                              StateIcon(
+                                esp: esp,
+                                state: BuzzerState.firstBuzz,
+                                size: size,
+                              ),
+                              StateIcon(
+                                esp: esp,
+                                state: BuzzerState.wait,
+                                size: size,
+                              ),
+                              StateIcon(
+                                esp: esp,
+                                state: BuzzerState.secondBuzz,
+                                size: size,
+                              ),
+                            ],
                           ),
                         ],
                       ),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      'Tap to open door',
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),

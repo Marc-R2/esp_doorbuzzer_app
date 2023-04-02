@@ -3,12 +3,15 @@ import 'dart:convert';
 import 'package:com_flutter_client/com_flutter_client.dart';
 import 'package:esp_doorbuzzer_app/buzzer_state.dart';
 import 'package:http/http.dart' as http;
+import 'package:local_auth/local_auth.dart';
 
 class EspController {
   EspController({
     required this.auth,
     required this.ipAddress,
   });
+
+  final localAuth = LocalAuthentication();
 
   final String auth;
 
@@ -26,6 +29,11 @@ class EspController {
   Future<int> get buzzerDelay async {
     _buzzerDelay ??= int.parse(await getState('number', 'wait_duration'));
     return _buzzerDelay!;
+  }
+
+  void resetCache() {
+    _buzzerDuration = null;
+    _buzzerDelay = null;
   }
 
   final state = GlobalData.withoutKey(value: BuzzerState.unknown);
@@ -57,13 +65,18 @@ class EspController {
   DateTime get lastOpen => _lastOpen ??= DateTime.now();
 
   DateTime get firstBuzzStart => lastOpen;
-  DateTime get firstBuzzEnd => firstBuzzStart.add(Duration(seconds: _buzzerDuration ?? 0));
+
+  DateTime get firstBuzzEnd =>
+      firstBuzzStart.add(Duration(seconds: _buzzerDuration ?? 0));
 
   DateTime get waitStart => firstBuzzEnd;
+
   DateTime get waitEnd => waitStart.add(Duration(seconds: _buzzerDelay ?? 0));
 
   DateTime get secondBuzzStart => waitEnd;
-  DateTime get secondBuzzEnd => secondBuzzStart.add(Duration(seconds: _buzzerDuration ?? 0));
+
+  DateTime get secondBuzzEnd =>
+      secondBuzzStart.add(Duration(seconds: _buzzerDuration ?? 0));
 
   DateTime getStartTimeByState(BuzzerState state) {
     switch (state) {
@@ -97,6 +110,20 @@ class EspController {
 
   Future<void> openDoor() async {
     if (state.value != BuzzerState.idle) return;
+
+    resetCache();
+    buzzerDuration;
+    buzzerDelay;
+
+    try {
+      final bool didAuthenticate = await localAuth.authenticate(
+        localizedReason: 'Confirm to open the door',
+      );
+      if (!didAuthenticate) return;
+    } on Exception catch (e) {
+      print(e);
+      return;
+    }
 
     await requestPost('button/door_buzzer/press');
 
