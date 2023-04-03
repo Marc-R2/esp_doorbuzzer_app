@@ -34,6 +34,7 @@ class EspController {
   void resetCache() {
     _buzzerDuration = null;
     _buzzerDelay = null;
+    isAvailable();
   }
 
   final state = GlobalData.withoutKey(value: BuzzerState.unknown);

@@ -10,6 +10,16 @@ class OpenInfo extends StatelessWidget {
 
   final EspController esp;
 
+  void _openDoor() async {
+    final state = esp.state.value;
+
+    if ([BuzzerState.unavailable, BuzzerState.unknown].contains(state)) {
+      await esp.isAvailable();
+    } else if (state == BuzzerState.idle) {
+      await esp.openDoor();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     esp.isAvailable();
@@ -17,28 +27,25 @@ class OpenInfo extends StatelessWidget {
       child: DataBuilder(
         data: esp.state,
         builder: (context, state) {
-          if (state == BuzzerState.unavailable) {
-            return const Text('Buzzer is unavailable');
-          }
-          if (state == BuzzerState.unknown) {
-            return const Text('Buzzer is in unknown state');
-          }
           const size = 64.0;
 
           final show =
               state == BuzzerState.finished || state == BuzzerState.idle;
 
-          return IgnorePointer(
-            ignoring: state != BuzzerState.idle,
-            child: InkWell(
-              onTap: () {
-                if (state == BuzzerState.idle) esp.openDoor();
-              },
-              child: Center(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    SizedBox(
+          final deactive =
+              state == BuzzerState.unknown || state == BuzzerState.unavailable;
+
+          return InkWell(
+            onTap: _openDoor,
+            child: Center(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  AnimatedOpacity(
+                    duration: const Duration(milliseconds: 256),
+                    curve: Curves.easeInOut,
+                    opacity: deactive ? 0.5 : 1,
+                    child: SizedBox(
                       height: size + size / 8,
                       width: size * 3,
                       child: Stack(
@@ -103,16 +110,24 @@ class OpenInfo extends StatelessWidget {
                         ],
                       ),
                     ),
-                    const SizedBox(height: 16),
-                    const Text(
-                      'Tap to open door',
-                      style: TextStyle(
-                        fontSize: 16,
-                        color: Colors.grey,
-                      ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    state == BuzzerState.idle
+                        ? 'Tap to open door'
+                        : state == BuzzerState.finished
+                            ? 'Door opened'
+                            : state == BuzzerState.unavailable
+                                ? 'ESP Unavailable - Tap to retry'
+                                : state == BuzzerState.unknown
+                                    ? 'State Unknown - Tap to retry'
+                                    : 'Opening door',
+                    style: const TextStyle(
+                      fontSize: 16,
+                      color: Colors.grey,
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
           );
