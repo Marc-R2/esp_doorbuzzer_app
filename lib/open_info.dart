@@ -112,19 +112,17 @@ class OpenInfo extends StatelessWidget {
                     ),
                   ),
                   const SizedBox(height: 16),
-                  Text(
-                    state == BuzzerState.idle
-                        ? 'Tap to open door'
-                        : state == BuzzerState.finished
-                            ? 'Door opened'
-                            : state == BuzzerState.unavailable
-                                ? 'ESP Unavailable - Tap to retry'
-                                : state == BuzzerState.unknown
-                                    ? 'State Unknown - Tap to retry'
-                                    : 'Opening door',
-                    style: const TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
+                  AnimatedSwitcher(
+                    duration: const Duration(milliseconds: 256),
+                    switchInCurve: Curves.easeInOut,
+                    switchOutCurve: Curves.easeInOut,
+                    child: Text(
+                      key: ValueKey(state),
+                      esp.getTitleByState(state) ?? '',
+                      style: const TextStyle(
+                        fontSize: 16,
+                        color: Colors.grey,
+                      ),
                     ),
                   ),
                 ],

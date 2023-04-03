@@ -44,9 +44,18 @@ class EspController {
     return _buzzerDelay!;
   }
 
-  void resetCache() {
+  void refreshCache() async {
+    final duration = _buzzerDuration;
+    final delay = _buzzerDelay;
+
     _buzzerDuration = null;
     _buzzerDelay = null;
+
+    await buzzerDuration;
+    await buzzerDelay;
+
+    if (_buzzerDuration == 0) _buzzerDuration = duration;
+    if (_buzzerDelay == 0) _buzzerDelay = delay;
   }
 
   void refresh() async {
@@ -56,9 +65,7 @@ class EspController {
     if (state.value == BuzzerState.finished) return;
 
     if (!await isAvailable()) return;
-    resetCache();
-    await buzzerDuration;
-    await buzzerDelay;
+    refreshCache();
   }
 
   final state = GlobalData.withoutKey(value: BuzzerState.unknown);
@@ -140,10 +147,27 @@ class EspController {
     }
   }
 
+  String? getTitleByState(BuzzerState state) {
+    switch (state) {
+      case BuzzerState.firstBuzz:
+      case BuzzerState.wait:
+      case BuzzerState.secondBuzz:
+        return 'Opening door';
+      case BuzzerState.finished:
+        return 'Door opened';
+      case BuzzerState.unknown:
+        return 'State Unknown - Tap to retry';
+      case BuzzerState.unavailable:
+        return 'ESP Unavailable - Tap to retry';
+      case BuzzerState.idle:
+        return 'Tap to open door';
+    }
+  }
+
   Future<void> openDoor() async {
     if (state.value != BuzzerState.idle) return;
 
-    resetCache();
+    refreshCache();
     buzzerDuration;
     buzzerDelay;
 
