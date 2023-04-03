@@ -1,5 +1,3 @@
-import 'package:com_flutter_client/com_flutter_client.dart';
-import 'package:esp_doorbuzzer_app/buzzer_state.dart';
 import 'package:esp_doorbuzzer_app/esp_controller.dart';
 import 'package:esp_doorbuzzer_app/open_info.dart';
 import 'package:flutter/material.dart';
@@ -40,16 +38,6 @@ class _MyHomePageState extends State<MyHomePage> {
   Widget build(BuildContext context) {
     return Scaffold(
       body: OpenInfo(esp: esp),
-      floatingActionButton: DataBuilder(
-        data: esp.state,
-        builder: (context, state) {
-          return FloatingActionButton(
-            onPressed: state != BuzzerState.idle ? null : esp.openDoor,
-            tooltip: 'Open door',
-            child: const Icon(Icons.door_back_door_outlined),
-          );
-        },
-      ),
     );
   }
 }

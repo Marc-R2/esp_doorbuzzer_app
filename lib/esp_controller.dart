@@ -1,4 +1,6 @@
+import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:com_flutter_client/com_flutter_client.dart';
 import 'package:esp_doorbuzzer_app/buzzer_state.dart';
@@ -9,7 +11,12 @@ class EspController {
   EspController({
     required this.auth,
     required this.ipAddress,
-  });
+  }) {
+    autoRefreshTimer = Timer.periodic(
+      const Duration(seconds: 5),
+      (timer) => refresh(),
+    );
+  }
 
   final localAuth = LocalAuthentication();
 
@@ -21,20 +28,37 @@ class EspController {
 
   int? _buzzerDelay;
 
+  late Timer autoRefreshTimer;
+
   Future<int> get buzzerDuration async {
-    _buzzerDuration ??= int.parse(await getState('number', 'buzzer_duration'));
+    final res = await getState('number', 'buzzer_duration');
+    if (res == null) return 0;
+    _buzzerDuration ??= int.parse(res);
     return _buzzerDuration!;
   }
 
   Future<int> get buzzerDelay async {
-    _buzzerDelay ??= int.parse(await getState('number', 'wait_duration'));
+    final res = await getState('number', 'wait_duration');
+    if (res == null) return 0;
+    _buzzerDelay ??= int.parse(res);
     return _buzzerDelay!;
   }
 
   void resetCache() {
     _buzzerDuration = null;
     _buzzerDelay = null;
-    isAvailable();
+  }
+
+  void refresh() async {
+    if (state.value == BuzzerState.firstBuzz) return;
+    if (state.value == BuzzerState.secondBuzz) return;
+    if (state.value == BuzzerState.wait) return;
+    if (state.value == BuzzerState.finished) return;
+
+    if (!await isAvailable()) return;
+    resetCache();
+    await buzzerDuration;
+    await buzzerDelay;
   }
 
   final state = GlobalData.withoutKey(value: BuzzerState.unknown);
@@ -56,10 +80,17 @@ class EspController {
     );
   }
 
-  Future<http.Response> requestGet(String path) => http.get(
-        Uri.parse('$ipAddress/$path'),
-        headers: headers,
-      );
+  Future<http.Response?> requestGet(String path) async {
+    try {
+      return await http
+          .get(Uri.parse('$ipAddress/$path'), headers: headers)
+          .timeout(const Duration(milliseconds: 512));
+    } catch (e) {
+      // Handle any errors that may occur during the request
+      print(e);
+      return null;
+    }
+  }
 
   DateTime? _lastOpen;
 
@@ -123,7 +154,7 @@ class EspController {
       if (!didAuthenticate) return;
     } on Exception catch (e) {
       print(e);
-      return;
+      if (Platform.isAndroid || Platform.isIOS) return;
     }
 
     await requestPost('button/door_buzzer/press');
@@ -142,18 +173,24 @@ class EspController {
   }
 
   Future<bool> isAvailable() async {
-    if ((await requestGet('')).statusCode == 200) {
+    if (state.value == BuzzerState.unavailable) {
+      state.value = BuzzerState.unknown;
+    }
+
+    if ((await requestGet(''))?.statusCode == 200) {
       state.value = BuzzerState.idle;
       return true;
     }
 
+    await Future<void>.delayed(const Duration(milliseconds: 512));
     state.value = BuzzerState.unavailable;
     return false;
   }
 
-  Future<String> getState(String type, String id) async {
+  Future<String?> getState(String type, String id) async {
     final response = await requestGet('$type/$id/get');
-    final body = jsonDecode(response.body);
+    if (response?.statusCode != 200) return null;
+    final body = jsonDecode(response?.body ?? '{}');
     return body['state'];
   }
 }
